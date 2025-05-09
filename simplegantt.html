@@ -166,18 +166,32 @@
               >
               <input type="date" id="taskStart" required />
             </div>
-            <div class="form-group">
-              <label for="taskDuration"
-                ><i class="fas fa-hourglass-half"></i> Duration (days):</label
-              >
-              <input
-                type="number"
-                id="taskDuration"
-                placeholder="E.g., 5"
-                min="1"
-                required
-              />
-            </div>
+			<!-- Choose mode -->
+			<div class="form-group">
+			  <label><i class="fas fa-calculator"></i> Compute by:</label>
+			  <label><input type="radio" name="taskEndMode" value="duration" checked>
+				Duration (days)
+			  </label>
+			  <label><input type="radio" name="taskEndMode" value="endDate">
+				End Date
+			  </label>
+			</div>
+
+			<!-- Duration input -->
+			<div class="form-group" id="durationGroup">
+			  <label for="taskDuration">
+				<i class="fas fa-hourglass-half"></i> Duration (days):
+			  </label>
+			  <input type="number" id="taskDuration" placeholder="E.g. 5" min="1" required />
+			</div>
+
+			<!-- End-date input -->
+			<div class="form-group" id="endDateGroup" style="display:none;">
+			  <label for="taskEndDate">
+				<i class="fas fa-calendar-check"></i> End Date:
+			  </label>
+			  <input type="date" id="taskEndDate" />
+			</div>
             <div class="form-group">
               <label for="taskCategory"
                 ><i class="fas fa-tag"></i> Category:</label
