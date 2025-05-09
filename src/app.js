@@ -1,6 +1,26 @@
 // NOTE: When displaying, creating, or updating items, always handle missing properties gracefully.
 // This ensures backward compatibility with files created in previous versions of the app.
 
+// toggle between duration vs. end-date
+const radios = document.querySelectorAll('input[name="taskEndMode"]');
+const durGrp = document.getElementById('durationGroup');
+const endGrp = document.getElementById('endDateGroup');
+radios.forEach(radio => radio.addEventListener('change', () => {
+  if (radio.value === 'duration' && radio.checked) {
+    durGrp.style.display = '';
+    endGrp.style.display = 'none';
+    document.getElementById('taskDuration').required = true;
+    document.getElementById('taskEndDate').required = false;
+  } else if (radio.value === 'endDate' && radio.checked) {
+    durGrp.style.display = 'none';
+    endGrp.style.display = '';
+    document.getElementById('taskDuration').required = false;
+    document.getElementById('taskEndDate').required = true;
+  }
+}));
+
+
+
 let projectData = {
   projectName: "Untitled Project",
   categories: [],
@@ -568,7 +588,6 @@ document
     if (!taskStart) {
       taskStart = new Date().toISOString().split("T")[0];
     }
-    const taskDurationValue = document.getElementById("taskDuration").value;
 
     // Validate task start date
     if (!taskStart) {
@@ -577,12 +596,37 @@ document
       return;
     }
 
-    // Validate task duration
-    const taskDuration = parseInt(taskDurationValue, 10);
-    if (isNaN(taskDuration) || taskDuration < 1) {
-      formErrorMessage.textContent =
-        "Please enter a valid duration (number greater than 0) for the task.";
-      return;
+    // Determine whether to use duration or end-date
+    const endMode = document.querySelector('input[name="taskEndMode"]:checked')
+      .value;
+    let taskDuration;
+    if (endMode === "duration") {
+      // Duration mode
+      const taskDurationValue = document.getElementById("taskDuration").value;
+      taskDuration = parseInt(taskDurationValue, 10);
+      if (isNaN(taskDuration) || taskDuration < 1) {
+        formErrorMessage.textContent =
+          "Please enter a valid duration (number greater than 0) for the task.";
+        return;
+      }
+    } else {
+      // End-date mode
+      const taskEndDateValue = document.getElementById("taskEndDate").value;
+      if (!taskEndDateValue) {
+        formErrorMessage.textContent =
+          "Please enter a valid end date for the task.";
+        return;
+      }
+      const startObj = new Date(taskStart);
+      const endObj = new Date(taskEndDateValue);
+      if (endObj < startObj) {
+        formErrorMessage.textContent =
+          "End date cannot be before start date.";
+        return;
+      }
+      // Compute inclusive duration in days
+      const diffMs = endObj - startObj;
+      taskDuration = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
     }
 
     // Clear the error message when validation passes
@@ -611,6 +655,7 @@ document
     const categorySelect = document.getElementById("taskCategory");
     const categoryId = parseInt(categorySelect.value, 10);
 
+    // Collect status and explanation
     const taskStatus =
       document.getElementById("taskStatus").value || "on-track";
     const statusExplanation = document
@@ -619,10 +664,11 @@ document
 
     // Collect assigned people
     const assignedPeopleSelect = document.getElementById("taskPeople");
-    const assignedPeople = Array.from(assignedPeopleSelect.selectedOptions).map(
-      (option) => parseInt(option.value)
-    );
+    const assignedPeople = Array.from(
+      assignedPeopleSelect.selectedOptions
+    ).map((option) => parseInt(option.value));
 
+    // Build the task object
     const task = {
       name: taskName,
       start: taskStart,
@@ -635,36 +681,33 @@ document
       assignedPeople: assignedPeople || [],
     };
 
-    // Create a temporary copy of tasks
-    let tempTasks = projectData.tasks.slice(); // Shallow copy of the array
-
+    // Shallow copy for circular‐dependency check
+    let tempTasks = projectData.tasks.slice();
     let currentTaskIndex;
+
     if (editIndex !== null) {
       currentTaskIndex = parseInt(editIndex, 10);
-      // Update the task in tempTasks
       tempTasks[currentTaskIndex] = task;
     } else {
-      // Set the index for the new task
       currentTaskIndex = tempTasks.length;
-      // Add new task to tempTasks
       tempTasks.push(task);
     }
 
-    // Check for circular dependencies
+    // Prevent circular deps
     if (hasCircularDependency(tempTasks, currentTaskIndex)) {
       formErrorMessage.textContent =
         "Circular dependency detected. Please resolve the dependencies.";
-      return; // Terminate the submission
+      return;
     }
 
-    // If no circular dependency is detected, proceed to add or update the task
+    // Commit to projectData
     if (editIndex !== null) {
       projectData.tasks[currentTaskIndex] = task;
     } else {
       projectData.tasks.push(task);
     }
 
-    // Reset the submit button for future use
+    // Reset form & UI
     submitButton.textContent = "Add Task";
     submitButton.removeAttribute("data-edit-index");
 
@@ -1451,6 +1494,7 @@ document.addEventListener("DOMContentLoaded", () => {
     shouldSort: false,
     searchResultLimit: 10,
     placeholderValue: "Select dependencies...",
+	duplicateItemsAllowed: false,
   });
 
   peopleChoices = new Choices("#taskPeople", {
@@ -1458,6 +1502,7 @@ document.addEventListener("DOMContentLoaded", () => {
     shouldSort: false,
     searchResultLimit: 10,
     placeholderValue: "Assign people...",
+	duplicateItemsAllowed: false,
   });
 
   categoryFilterChoices = new Choices("#categoryFilter", {
@@ -1465,6 +1510,7 @@ document.addEventListener("DOMContentLoaded", () => {
     shouldSort: false,
     placeholderValue: "Filter by category...",
     searchResultLimit: 10,
+	duplicateItemsAllowed: false,
   });
 
   // Add event listener to re-render the chart when the category selection changes
