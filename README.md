@@ -1,3 +1,8 @@
+# Changes from main repository
+
+- Fixes by [W4RH4WK](https://github.com/W4RH4WK). This fixes duplicate and "junk" categories appearing.
+- Added "End Date" method for entering task durations, complementing the existing way of defining duration by number of days.
+
 # SimpleGantt
 
 ![Screenshot 2025-01-09 at 17 58 25](https://github.com/user-attachments/assets/c4f317b8-4b8d-4169-bc89-78fd2d02b5fe)
